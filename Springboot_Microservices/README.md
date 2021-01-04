@@ -176,7 +176,7 @@
                     private RestTemplate restTemplate;
 
                     @Autowired
-                    WebClient.Builder weClinetBuilder;
+                    WebClient.Builder webClinetBuilder;
 
                     @Autowired
                     MovieInfo movieInfo;
@@ -232,7 +232,7 @@
             ``` 
 ![Hystrix_parameter](Hystrix_parameter.PNG)
  * Hystrix Dashboard
-   * Add  depencencies in pom.xml ie, spring-cloud-starter-netflix-hystrix-dashboard, spring-boot-starter-actuator
+   * Add  dependencies in pom.xml ie, spring-cloud-starter-netflix-hystrix-dashboard, spring-boot-starter-actuator
    * Add annotation @EnableHystrixDashboard in main class ie MovieCatalogServiceApplication.java
    * Add this in application.properties management.endpoints.web.exposure.include=hystrix.stream
    * https://8081/hystrix
@@ -243,23 +243,23 @@
 ## Step 3: Microservice Configurations
 
 ### Exaple Configuration
- 1. Datbase Connection
+ 1. Database Connection
  2. Credentials
  3. Feature flags
  4. Business logic configuration parameters
- 5. Scenarui testing
+ 5. Scenario testing
  6. Spring Boot Configuration
 
 ### Goal
- 1. Externalized:
+ 1. Externalized(property files):
       * `@Value("${<key of application.property>}")`
         ```java
             @Value("${my.greeting}")
-            private String greetingMessage; // value of appplication.properties
+            private String greetingMessage; // value of application.properties
             @Value("${my.greeting : Default_value}")
-            private String greetingMessage; // value of appplication.properties is not found then it willassign the default value
+            private String greetingMessage; // value of application.properties is not found then it will assign the default value
             @Value("some static message")
-            private String staticMessage; //some static nessage
+            private String staticMessage; //some static message
             @Value("${my.list.greeting}")
             private List<String>greetingMessage; // comma separate values comes as lists
             @Value("#{${my.list.greeting}}") // Evaluate expression
@@ -278,7 +278,66 @@
         ```  
       * Once jar is created , add new application.properties in same path it will override existing properties
       * `java -jar <name_of_jar> --<property_name>=<property_value>`
- 2. Environment specific
- 3. Consistent
- 4. Version history
- 5. Real-time management
+ 2. Environment specific(spring profiles):
+     * Spring Profiles
+       * If its not there default one get selected
+       * Profile creation `application-<profileName>.extension`
+       * Adding Profile to application.yml ie `spring.profiles.active:<profileName>`
+       * `java -jar <name_of_jar> --spring.profiles.active=<profileName>`
+       * `@Profile("<profileName>")` on Bean
+     * Environment
+       * ```java
+            @Autowired
+            private Environment env
+
+            env.<methods>
+         ``` 
+ 3. Consistent(spring cloud config server)
+ 4. Version history(Git repo source)
+ 5. Real-time management:
+     * Should have spring cloud config server with client
+     * Add dependency called org.springframework.boot:springboot-starter-actuator 
+     * Add annotation @RefreshScope is resource of application ie controller class 
+     * Call the Endpoint by post request- `http://localhost:<port>/actuator/refresh`
+
+### YAML 
+ 1. It used to be Yet Another Markup Language, but now YAML Ain't Markup Language
+ 2. Syntax contains Key and Values
+ 3. Text by default takes as string ie no need of ""
+   ```yml
+    app:
+        name: My app
+        description: Welcome to ${app.name}
+
+    my:
+        greeting: Hello World
+        list:
+            value: One, Two, Three
+
+    db:
+        connection: "{connectionString: 'http://___', userName:'foo', password: 'pass'}"
+        host: 127.0.0.1
+        port: 1200
+
+    management.endpoints.web.exposure.include: "*"
+   ```
+### Config as Service
+ 1. Apache Zookeeper
+ 2. ETCD - distributed key-value store
+ 3. Hashicorp Consul
+ 4. Spring Cloud Configuration Service:
+      * Server 
+        * Create springboot app with having atlesast one dependency as config-server ie org.springframework.cloud : spring-cloud-config-server
+        * Add annotation @EnableConfigServer
+        * `spring.cloud.config.server.git.uri=<repo>` in  application.properties , for local path `${HOME}/<path>` of config file
+        * Usually cofiguration in config file applies to all client service. If your config should apply to specific microservice then your config file name is same as that of client microservice 
+        * `https://localhost:<port>/<filename_without_extension>/profile` is checking for config values
+      * Client
+        * Add dependency  org.springframework.cloud : spring-cloud-stater-config
+        * Add config-server url in microservice's application.properties ie, `spring.cloud.config.uri:http://localhost:8888` 
+
+### Config Strategies
+ 1. Specificity: Microservice specific and Changing: No then go for Property files
+ 2. Specificity: Microservice specific and Changing: Yes then go for Config Server
+ 3. Specificity: Microservice specific and Type: Environment config then go for System variable with alias
+   
